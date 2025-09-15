@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Binary assets kept out of version control
+/assets/
+/web/favicon.png
+/web/icons/

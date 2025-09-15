@@ -8,23 +8,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:myapp/main.dart';
+import 'package:valley_farm_store/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('renders Valley Farm store front UI scaffolding', (WidgetTester tester) async {
+    await tester.pumpWidget(const ValleyFarmApp());
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Valley Farm Secrets Store'), findsOneWidget);
+    expect(find.text('Special Offers'), findsOneWidget);
+    expect(find.text('Shop by Category'), findsOneWidget);
+    expect(find.text('Cart (0)'), findsOneWidget);
+  });
+
+  testWidgets('adding a product updates the cart count', (WidgetTester tester) async {
+    await tester.pumpWidget(const ValleyFarmApp());
+    await tester.pump();
+
+    expect(find.text('Cart (0)'), findsOneWidget);
+
+    final Finder addToCartButton = find.widgetWithText(FilledButton, 'Add to Cart').first;
+    await tester.tap(addToCartButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Cart (1)'), findsOneWidget);
   });
 }
