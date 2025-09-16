@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -16,6 +17,7 @@ class StoreCatalog {
     required this.currencyCode,
     required this.currencySymbol,
     required this.currencySuffix,
+    required this.source,
   });
 
   final List<Category> categories;
@@ -23,6 +25,7 @@ class StoreCatalog {
   final String currencyCode;
   final String currencySymbol;
   final String currencySuffix;
+  final Uri source;
 }
 
 class StoreService {
@@ -31,29 +34,40 @@ class StoreService {
     List<String> baseUrls = storeApiBaseUrls,
     this.requestTimeout = const Duration(seconds: 12),
   })  : _client = client ?? http.Client(),
-        _baseUrls = baseUrls
-            .where((String url) => url.trim().isNotEmpty)
-            .toList(growable: false);
+        _baseUris = List<Uri>.unmodifiable(
+          LinkedHashSet<Uri>.from(
+            baseUrls
+                .map((String url) => Uri.tryParse(url.trim()))
+                .whereType<Uri>()
+                .map(_normaliseBaseUri),
+          ),
+        );
 
   final http.Client _client;
-  final List<String> _baseUrls;
+  final List<Uri> _baseUris;
   final Duration requestTimeout;
+
+  static Uri _normaliseBaseUri(Uri uri) {
+    final List<String> segments =
+        uri.pathSegments.where((String segment) => segment.isNotEmpty).toList();
+    return uri.replace(pathSegments: segments);
+  }
 
   static const int _pageSize = 100;
 
   Future<StoreCatalog> fetchCatalog() async {
-    if (_baseUrls.isEmpty) {
+    if (_baseUris.isEmpty) {
       throw StoreServiceException(
         message: 'No Valley Farm Secrets store API endpoints were configured.',
       );
     }
 
     StoreServiceException? lastException;
-    for (final String baseUrl in _baseUrls) {
+    for (final Uri baseUri in _baseUris) {
       try {
-        final List<Category> categories = await _fetchCategories(baseUrl);
+        final List<Category> categories = await _fetchCategories(baseUri);
         final _ProductResponse productResponse =
-            await _fetchProducts(baseUrl, categories: categories);
+            await _fetchProducts(baseUri, categories: categories);
         if (productResponse.products.isEmpty) {
           throw StoreServiceException(
             message: 'No products returned from the store API.',
@@ -65,6 +79,7 @@ class StoreService {
           currencyCode: productResponse.currencyCode,
           currencySymbol: productResponse.currencySymbol,
           currencySuffix: productResponse.currencySuffix,
+          source: baseUri,
         );
       } on StoreServiceException catch (error) {
         lastException = error;
@@ -84,9 +99,12 @@ class StoreService {
         );
   }
 
-  Future<List<Category>> _fetchCategories(String baseUrl) async {
-    final Uri uri =
-        Uri.parse('$baseUrl/products/categories?per_page=$_pageSize');
+  Future<List<Category>> _fetchCategories(Uri baseUri) async {
+    final Uri uri = _buildUri(
+      baseUri,
+      const <String>['products', 'categories'],
+      queryParameters: <String, Object?>{'per_page': _pageSize},
+    );
     final http.Response response = await _get(uri);
     if (!_isSuccess(response.statusCode)) {
       throw StoreServiceException(
@@ -147,7 +165,7 @@ class StoreService {
   }
 
   Future<_ProductResponse> _fetchProducts(
-    String baseUrl, {
+    Uri baseUri, {
     required List<Category> categories,
   }) async {
     final Map<String, Category> categoryById = <String, Category>{
@@ -160,8 +178,14 @@ class StoreService {
 
     int page = 1;
     while (true) {
-      final Uri uri =
-          Uri.parse('$baseUrl/products?per_page=$_pageSize&page=$page');
+      final Uri uri = _buildUri(
+        baseUri,
+        const <String>['products'],
+        queryParameters: <String, Object?>{
+          'per_page': _pageSize,
+          'page': page,
+        },
+      );
       final http.Response response = await _get(uri);
       if (!_isSuccess(response.statusCode)) {
         throw StoreServiceException(
@@ -202,6 +226,30 @@ class StoreService {
       currencySymbol: currencySymbol,
       currencySuffix: currencySuffix,
     );
+  }
+
+  Uri _buildUri(
+    Uri baseUri,
+    List<String> additionalSegments, {
+    Map<String, Object?> queryParameters = const <String, Object?>{},
+  }) {
+    final List<String> segments = <String>[
+      ...baseUri.pathSegments.where((String segment) => segment.isNotEmpty),
+      ...additionalSegments,
+    ];
+    Map<String, String>? query;
+    if (queryParameters.isNotEmpty) {
+      query = <String, String>{};
+      queryParameters.forEach((String key, Object? value) {
+        if (value != null) {
+          query![key] = value.toString();
+        }
+      });
+      if (query.isEmpty) {
+        query = null;
+      }
+    }
+    return baseUri.replace(pathSegments: segments, queryParameters: query);
   }
 
   Future<http.Response> _get(Uri uri) async {

@@ -9,8 +9,8 @@ management, and an end-to-end checkout flow.
 
 - **Live WooCommerce integration** that fetches categories and products from
   `https://www.valleyfarmsecrets.com/store`, automatically probing both root and
-  `/store` REST API paths with an offline fallback catalogue defined in
-  `lib/data/store_data.dart`.
+  `/store` REST API paths (including the versioned `wc/store/v1` routes) with an
+  offline fallback catalogue defined in `lib/data/store_data.dart`.
 - **Responsive layout** that presents sidebar filters on wide screens and a
   drawer-based experience on smaller devices.
 - **Special offers carousel** that highlights products currently on promotion.
@@ -56,6 +56,18 @@ lib/
   Unsplash so the repository stays free of binary assets.
 - The Material 3 theme uses the Valley Farm colour palette defined in
   `lib/constants.dart`.
+
+### Image requirements
+
+| Purpose | Path / URL | Size (px) | Notes |
+| --- | --- | --- | --- |
+| Android launcher icon (mdpi) | `android/app/src/main/res/mipmap-mdpi/ic_launcher.png` | 48 × 48 | Default Flutter launcher asset |
+| Android launcher icon (hdpi) | `android/app/src/main/res/mipmap-hdpi/ic_launcher.png` | 72 × 72 | Default Flutter launcher asset |
+| Android launcher icon (xhdpi) | `android/app/src/main/res/mipmap-xhdpi/ic_launcher.png` | 96 × 96 | Default Flutter launcher asset |
+| Android launcher icon (xxhdpi) | `android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png` | 144 × 144 | Default Flutter launcher asset |
+| Android launcher icon (xxxhdpi) | `android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png` | 192 × 192 | Default Flutter launcher asset |
+| Product placeholder image | `https://images.unsplash.com/photo-1484981137413-6f0d4f3b3326?auto=format&fit=crop&w=800&q=80` | 800 × 533 (cropped) | Used when WooCommerce products do not expose their own image |
+| Web manifest icon slots | `web/manifest.json` | 192 × 192, 512 × 512 | Declare images but the files need to be supplied before publishing |
 
 ## Tests & linting
 

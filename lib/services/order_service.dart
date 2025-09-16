@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -13,10 +14,14 @@ class OrderService {
     List<String> endpoints = storeCheckoutEndpoints,
     this.requestTimeout = const Duration(seconds: 12),
   })  : _client = client ?? http.Client(),
-        _endpoints = endpoints
-            .where((String url) => url.trim().isNotEmpty)
-            .map(Uri.parse)
-            .toList(growable: false);
+        _endpoints = List<Uri>.unmodifiable(
+          LinkedHashSet<Uri>.from(
+            endpoints
+                .map((String url) => Uri.tryParse(url.trim()))
+                .whereType<Uri>()
+                .where((Uri uri) => uri.hasScheme && uri.host.isNotEmpty),
+          ),
+        );
 
   final http.Client _client;
   final List<Uri> _endpoints;

@@ -4,19 +4,24 @@ const double bikerDeliveryFee = 5.0;
 
 /// Candidate base URLs for the live Valley Farm Secrets WooCommerce Store API.
 ///
-/// The store is hosted under `/store`, but the underlying WordPress REST API can
-/// be exposed either from the root domain or the `/store` subdirectory depending
-/// on the server configuration. Trying both gives the app a better chance of
-/// reaching the live catalogue without requiring a code change.
+/// The WordPress installation serves the REST API both from the root domain and
+/// the `/store` subdirectory. Additionally, newer WooCommerce deployments expose
+/// the versioned `wc/store/v1` endpoints while older builds still answer under
+/// `wc/store`. Listing each permutation allows the app to seamlessly fall back
+/// without additional configuration when the server is upgraded or moved.
 const List<String> storeApiBaseUrls = <String>[
+  'https://www.valleyfarmsecrets.com/store/wp-json/wc/store/v1',
   'https://www.valleyfarmsecrets.com/store/wp-json/wc/store',
+  'https://www.valleyfarmsecrets.com/wp-json/wc/store/v1',
   'https://www.valleyfarmsecrets.com/wp-json/wc/store',
 ];
 
 /// Checkout endpoints derived from [storeApiBaseUrls]. The first responsive
 /// endpoint will be used when attempting to submit an order.
 const List<String> storeCheckoutEndpoints = <String>[
+  'https://www.valleyfarmsecrets.com/store/wp-json/wc/store/v1/checkout',
   'https://www.valleyfarmsecrets.com/store/wp-json/wc/store/checkout',
+  'https://www.valleyfarmsecrets.com/wp-json/wc/store/v1/checkout',
   'https://www.valleyfarmsecrets.com/wp-json/wc/store/checkout',
 ];
 

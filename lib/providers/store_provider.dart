@@ -19,6 +19,7 @@ class StoreProvider extends ChangeNotifier {
   String _currencyCode = 'USD';
   String _currencySymbol = 'US\$';
   String _currencySuffix = '';
+  Uri? _activeEndpoint;
 
   List<Category> get categories => List<Category>.unmodifiable(_categories);
   List<Product> get products => List<Product>.unmodifiable(_products);
@@ -28,6 +29,7 @@ class StoreProvider extends ChangeNotifier {
   String get currencyCode => _currencyCode;
   String get currencySymbol => _currencySymbol;
   String get currencySuffix => _currencySuffix;
+  Uri? get activeEndpoint => _activeEndpoint;
   String get currencyLabel {
     if (_currencySymbol.trim().isNotEmpty) {
       return _currencySymbol.trim();
@@ -70,6 +72,8 @@ class StoreProvider extends ChangeNotifier {
       _currencySymbol = catalog.currencySymbol;
       _currencySuffix = catalog.currencySuffix;
       _statusMessage = null;
+      _activeEndpoint = catalog.source;
+      debugPrint('StoreProvider loaded live catalogue from ${catalog.source}');
     } on StoreServiceException catch (error, stackTrace) {
       debugPrint('StoreProvider failed to load catalog: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -100,5 +104,6 @@ class StoreProvider extends ChangeNotifier {
     _currencyCode = 'USD';
     _currencySymbol = 'US\$';
     _currencySuffix = '';
+    _activeEndpoint = null;
   }
 }
