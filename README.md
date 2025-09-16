@@ -7,8 +7,9 @@ management, and an end-to-end checkout flow.
 
 ## Features
 
-- **Seeded catalogue** with the Valley Farm Secrets categories, subcategories,
-  and products defined in `lib/data/store_data.dart`.
+- **Live WooCommerce integration** that fetches categories and products from
+  `https://www.valleyfarmsecrets.com/store` with an offline fallback catalogue
+  defined in `lib/data/store_data.dart`.
 - **Responsive layout** that presents sidebar filters on wide screens and a
   drawer-based experience on smaller devices.
 - **Special offers carousel** that highlights products currently on promotion.
@@ -30,10 +31,9 @@ flutter pub get
 flutter run
 ```
 
-> **Note:** The checkout flow sends a demo POST request to
-> `https://example.com/api/orders`. Update `ordersEndpoint` in
-> `lib/constants.dart` to point to a real backend before shipping to
-> production.
+> **Note:** The checkout flow posts to the Valley Farm Secrets WooCommerce
+> checkout endpoint configured in `lib/constants.dart`. Update `ordersEndpoint`
+> if your deployment requires a different authenticated endpoint.
 
 ## Project structure
 

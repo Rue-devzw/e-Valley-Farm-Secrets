@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'constants.dart';
 import 'providers/cart_provider.dart';
+import 'providers/store_provider.dart';
 import 'screens/store_screen.dart';
 
 void main() {
@@ -18,8 +19,11 @@ class ValleyFarmApp extends StatelessWidget {
       secondary: accentGold,
     );
 
-    return ChangeNotifierProvider<CartProvider>(
-      create: (_) => CartProvider(),
+    return MultiProvider(
+      providers: <ChangeNotifierProvider<dynamic>>[
+        ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
+        ChangeNotifierProvider<StoreProvider>(create: (_) => StoreProvider()),
+      ],
       child: MaterialApp(
         title: 'Valley Farm Secrets Store',
         debugShowCheckedModeBanner: false,

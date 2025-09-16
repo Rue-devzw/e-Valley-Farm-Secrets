@@ -19,6 +19,35 @@ class CartProvider extends ChangeNotifier {
 
   bool get isEmpty => _items.isEmpty;
 
+  String get currencyCode =>
+      _items.isNotEmpty ? _items.values.first.product.currencyCode : 'USD';
+
+  String get currencySymbol =>
+      _items.isNotEmpty ? _items.values.first.product.currencySymbol : 'US\$';
+
+  String get currencySuffix =>
+      _items.isNotEmpty ? _items.values.first.product.currencySuffix : '';
+
+  String get currencyLabel {
+    final String symbol = currencySymbol.trim();
+    if (symbol.isNotEmpty) {
+      return symbol;
+    }
+    final String suffix = currencySuffix.trim();
+    if (suffix.isNotEmpty) {
+      return suffix;
+    }
+    return currencyCode;
+  }
+
+  String formatAmount(double value) {
+    if (_items.isEmpty) {
+      final String label = currencyLabel;
+      return '$label ${value.toStringAsFixed(2)}';
+    }
+    return _items.values.first.product.formatPrice(value);
+  }
+
   void addItem(Product product) {
     final CartItem? existing = _items[product.id];
     if (existing != null) {
