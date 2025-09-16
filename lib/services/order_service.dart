@@ -18,6 +18,12 @@ class OrderService {
     double deliveryFee = 0,
   }) async {
     final double total = subtotal + deliveryFee;
+    final String currencyCode =
+        items.isNotEmpty ? items.first.product.currencyCode : 'USD';
+    final String currencySymbol =
+        items.isNotEmpty ? items.first.product.currencySymbol : 'US\$';
+    final String currencySuffix =
+        items.isNotEmpty ? items.first.product.currencySuffix : '';
     final Map<String, dynamic> payload = <String, dynamic>{
       'items': items
           .map((CartItem item) => <String, dynamic>{
@@ -26,12 +32,19 @@ class OrderService {
                 'unitPrice': item.product.price,
                 'quantity': item.quantity,
                 'subtotal': item.subtotal,
+                'permalink': item.product.permalink,
+                'imageUrl': item.product.imageUrl,
               })
           .toList(),
       'customer': customer,
       'subtotal': subtotal,
       'deliveryFee': deliveryFee,
       'total': total,
+      'currency': <String, String>{
+        'code': currencyCode,
+        'symbol': currencySymbol,
+        'suffix': currencySuffix,
+      },
     };
 
     try {

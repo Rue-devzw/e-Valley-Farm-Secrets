@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../constants.dart';
 import '../models/cart_item.dart';
+import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../services/order_service.dart';
 
@@ -36,6 +37,17 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
       !_isGift && _deliveryMethod == DeliveryMethod.delivery ? bikerDeliveryFee : 0;
 
   double get _total => widget.subtotal + _deliveryFee;
+
+  Product? get _referenceProduct =>
+      widget.items.isNotEmpty ? widget.items.first.product : null;
+
+  String _formatCurrency(double amount) {
+    final Product? reference = _referenceProduct;
+    if (reference != null) {
+      return reference.formatPrice(amount);
+    }
+    return 'US\$ ${amount.toStringAsFixed(2)}';
+  }
 
   @override
   void dispose() {
@@ -153,7 +165,9 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                     RadioListTile<DeliveryMethod>(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Deliver with Valley Farm Biker'),
-                      subtitle: const Text('Available in Harare. A USD 5.00 biker fee applies.'),
+                      subtitle: Text(
+                        'Available in Harare. A ${_formatCurrency(bikerDeliveryFee)} biker fee applies.',
+                      ),
                       value: DeliveryMethod.delivery,
                       groupValue: _deliveryMethod,
                       onChanged: _isSubmitting
@@ -219,7 +233,12 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  _OrderSummary(subtotal: widget.subtotal, deliveryFee: _deliveryFee, total: _total),
+                    _OrderSummary(
+                      subtotal: widget.subtotal,
+                      deliveryFee: _deliveryFee,
+                      total: _total,
+                      formatAmount: _formatCurrency,
+                    ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -312,11 +331,17 @@ class _CheckoutDialogState extends State<CheckoutDialog> {
 }
 
 class _OrderSummary extends StatelessWidget {
-  const _OrderSummary({required this.subtotal, required this.deliveryFee, required this.total});
+  const _OrderSummary({
+    required this.subtotal,
+    required this.deliveryFee,
+    required this.total,
+    required this.formatAmount,
+  });
 
   final double subtotal;
   final double deliveryFee;
   final double total;
+  final String Function(double) formatAmount;
 
   @override
   Widget build(BuildContext context) {
@@ -335,10 +360,10 @@ class _OrderSummary extends StatelessWidget {
         children: <Widget>[
           Text('Order Summary', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
-          _SummaryRow(label: 'Subtotal', value: subtotal),
-          _SummaryRow(label: 'Biker Delivery Fee', value: deliveryFee),
+          _SummaryRow(label: 'Subtotal', value: subtotal, formatter: formatAmount),
+          _SummaryRow(label: 'Biker Delivery Fee', value: deliveryFee, formatter: formatAmount),
           const Divider(),
-          _SummaryRow(label: 'Total', value: total, emphasize: true),
+          _SummaryRow(label: 'Total', value: total, formatter: formatAmount, emphasize: true),
         ],
       ),
     );
@@ -346,10 +371,16 @@ class _OrderSummary extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value, this.emphasize = false});
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    required this.formatter,
+    this.emphasize = false,
+  });
 
   final String label;
   final double value;
+  final String Function(double) formatter;
   final bool emphasize;
 
   @override
@@ -364,7 +395,7 @@ class _SummaryRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Text(label),
-          Text('USD ${value.toStringAsFixed(2)}', style: style),
+          Text(formatter(value), style: style),
         ],
       ),
     );

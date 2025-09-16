@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data/store_data.dart';
 import '../models/category.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
+import '../providers/store_provider.dart';
 import '../widgets/cart_bottom_sheet.dart';
 import '../widgets/checkout_dialog.dart';
 import '../widgets/filter_panel.dart';
@@ -30,6 +30,17 @@ class _StoreScreenState extends State<StoreScreen> {
       _specialsOnly || _selectedCategoryId != 'all' || _searchController.text.trim().isNotEmpty;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      context.read<StoreProvider>().ensureLoaded();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -38,6 +49,8 @@ class _StoreScreenState extends State<StoreScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isWide = MediaQuery.of(context).size.width >= 960;
+    final StoreProvider store = context.watch<StoreProvider>();
+    final List<Category> categories = store.categories;
 
     return Scaffold(
       appBar: AppBar(
@@ -94,7 +107,7 @@ class _StoreScreenState extends State<StoreScreen> {
           : Drawer(
               child: SafeArea(
                 child: FilterPanel(
-                  categories: storeCategories,
+                  categories: categories,
                   searchController: _searchController,
                   specialsOnly: _specialsOnly,
                   selectedCategoryId: _selectedCategoryId,
@@ -106,13 +119,13 @@ class _StoreScreenState extends State<StoreScreen> {
             ),
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final Widget mainContent = _buildMainContent();
+          final Widget mainContent = _buildMainContent(store);
           if (isWide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 FilterPanel(
-                  categories: storeCategories,
+                  categories: categories,
                   searchController: _searchController,
                   specialsOnly: _specialsOnly,
                   selectedCategoryId: _selectedCategoryId,
@@ -140,55 +153,92 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  Widget _buildMainContent() {
-    final List<Product> filteredProducts = _applyFilters();
+  Widget _buildMainContent(StoreProvider store) {
+    if (store.isLoading && store.products.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final List<Product> sourceProducts = store.products;
+    if (sourceProducts.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: store.reload,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+          children: <Widget>[
+            if (store.statusMessage != null) ...<Widget>[
+              _buildStatusBanner(store.statusMessage!),
+              const SizedBox(height: 16),
+            ],
+            _buildEmptyState(),
+          ],
+        ),
+      );
+    }
+
+    final List<Product> filteredProducts = _applyFilters(sourceProducts);
     final List<Product> specials = filteredProducts
         .where((Product product) => product.onSpecial)
         .toList(growable: false);
     final List<Product> specialShowcase = _specialsOnly ? filteredProducts : specials;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-      children: <Widget>[
-        SpecialOffersCarousel(products: specialShowcase),
-        const SizedBox(height: 24),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    _filtersActive ? 'Filtered Products' : 'Shop by Category',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _filtersActive
-                        ? 'Tailor your basket with the filters and sort options below.'
-                        : 'Browse the full Valley Farm Secrets range grouped by category.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            _buildSortDropdown(),
-          ],
-        ),
+    final List<Widget> children = <Widget>[
+      if (store.isLoading) ...<Widget>[
+        const LinearProgressIndicator(),
         const SizedBox(height: 16),
-        if (_filtersActive)
-          if (filteredProducts.isEmpty)
-            _buildEmptyState()
-          else
-            _buildProductGrid(filteredProducts)
-        else
-          _buildGroupedGrid(),
       ],
+      if (store.statusMessage != null) ...<Widget>[
+        if (!store.isLoading) const SizedBox(height: 12),
+        _buildStatusBanner(store.statusMessage!),
+        const SizedBox(height: 16),
+      ],
+      SpecialOffersCarousel(products: specialShowcase),
+      const SizedBox(height: 24),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  _filtersActive ? 'Filtered Products' : 'Shop by Category',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _filtersActive
+                      ? 'Tailor your basket with the filters and sort options below.'
+                      : 'Browse the full Valley Farm Secrets range grouped by category.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          _buildSortDropdown(),
+        ],
+      ),
+      const SizedBox(height: 16),
+      if (_filtersActive)
+        if (filteredProducts.isEmpty)
+          _buildEmptyState()
+        else
+          _buildProductGrid(filteredProducts)
+      else
+        _buildGroupedGrid(store.categories, sourceProducts),
+    ];
+
+    return RefreshIndicator(
+      onRefresh: store.reload,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+        children: children,
+      ),
     );
   }
 
@@ -227,6 +277,33 @@ class _StoreScreenState extends State<StoreScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(String message) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.secondaryContainer.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.info_outline, color: colors.onSecondaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSecondaryContainer,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -285,10 +362,10 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  Widget _buildGroupedGrid() {
+  Widget _buildGroupedGrid(List<Category> categories, List<Product> products) {
     final List<Widget> sections = <Widget>[];
-    for (final Category category in storeCategories) {
-      final List<Product> categoryProducts = storeProducts
+    for (final Category category in categories) {
+      final List<Product> categoryProducts = products
           .where((Product product) => product.categoryId == category.id)
           .toList(growable: false);
       if (categoryProducts.isEmpty) {
@@ -300,33 +377,39 @@ class _StoreScreenState extends State<StoreScreen> {
         ..add(Text(
           category.name,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-        ))
-        ..add(Text(category.description, style: Theme.of(context).textTheme.bodyMedium))
+        ));
+      if (category.description.isNotEmpty) {
+        sections.add(Text(category.description, style: Theme.of(context).textTheme.bodyMedium));
+      }
+      sections
         ..add(const SizedBox(height: 12))
         ..add(_buildProductGrid(sortedCategoryProducts))
         ..add(const SizedBox(height: 24));
     }
+    if (sections.isEmpty) {
+      return _buildEmptyState();
+    }
     return Column(children: sections);
   }
 
-  List<Product> _applyFilters() {
-    Iterable<Product> products = storeProducts;
+  List<Product> _applyFilters(List<Product> products) {
+    Iterable<Product> filtered = products;
     if (_selectedCategoryId != 'all') {
-      products = products.where((Product product) => product.categoryId == _selectedCategoryId);
+      filtered = filtered.where((Product product) => product.categoryId == _selectedCategoryId);
     }
     if (_specialsOnly) {
-      products = products.where((Product product) => product.onSpecial);
+      filtered = filtered.where((Product product) => product.onSpecial);
     }
     final String query = _searchController.text.trim().toLowerCase();
     if (query.isNotEmpty) {
-      products = products.where(
+      filtered = filtered.where(
         (Product product) =>
             product.name.toLowerCase().contains(query) ||
             product.unit.toLowerCase().contains(query) ||
             (product.description?.toLowerCase().contains(query) ?? false),
       );
     }
-    final List<Product> result = products.toList(growable: false);
+    final List<Product> result = filtered.toList(growable: false);
     return _sortProducts(result);
   }
 
