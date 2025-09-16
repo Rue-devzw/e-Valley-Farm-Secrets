@@ -69,7 +69,7 @@ class CartBottomSheet extends StatelessWidget {
                       children: <Widget>[
                         Text('Subtotal', style: theme.textTheme.titleMedium),
                         Text(
-                          'USD ${cart.subtotal.toStringAsFixed(2)}',
+                          cart.formatAmount(cart.subtotal),
                           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -157,7 +157,7 @@ class _CartItemRow extends StatelessWidget {
                     onIncrease: () => cart.addItem(item.product),
                   ),
                   Text(
-                    'USD ${(item.subtotal).toStringAsFixed(2)}',
+                    item.product.formatPrice(item.subtotal),
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],

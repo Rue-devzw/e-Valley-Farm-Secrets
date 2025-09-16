@@ -5,9 +5,6 @@ import '../models/category.dart';
 import '../models/product.dart';
 import '../models/sub_category.dart';
 
-const String placeholderImageUrl =
-    'https://images.unsplash.com/photo-1484981137413-6f0d4f3b3326?auto=format&fit=crop&w=800&q=80';
-
 final List<Category> storeCategories = <Category>[
   Category(
     id: 'fresh-produce',

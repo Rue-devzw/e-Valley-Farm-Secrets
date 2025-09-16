@@ -82,7 +82,7 @@ class ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Text(
-                  'USD ${product.price.toStringAsFixed(2)}',
+                  product.formatPrice(product.price),
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: colors.primary,
                     fontWeight: FontWeight.bold,
@@ -91,7 +91,7 @@ class ProductCard extends StatelessWidget {
                 if (product.oldPrice != null) ...<Widget>[
                   const SizedBox(width: 8),
                   Text(
-                    'USD ${product.oldPrice!.toStringAsFixed(2)}',
+                    product.formatPrice(product.oldPrice!),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.outline,
                       decoration: TextDecoration.lineThrough,
