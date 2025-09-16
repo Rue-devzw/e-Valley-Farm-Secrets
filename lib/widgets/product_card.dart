@@ -34,7 +34,7 @@ class ProductCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
                           return Container(
-                            color: colors.surfaceVariant,
+                            color: colors.surfaceContainerHighest,
                             alignment: Alignment.center,
                             child: Icon(Icons.image_not_supported_outlined, color: colors.outline),
                           );

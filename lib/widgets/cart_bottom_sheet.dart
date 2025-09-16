@@ -118,7 +118,7 @@ class _CartItemRow extends StatelessWidget {
               return Container(
                 width: 72,
                 height: 72,
-                color: colors.surfaceVariant,
+                color: colors.surfaceContainerHighest,
                 alignment: Alignment.center,
                 child: Icon(Icons.broken_image_outlined, color: colors.outline),
               );

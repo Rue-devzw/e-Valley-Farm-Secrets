@@ -327,7 +327,7 @@ class _OrderSummary extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.surfaceVariant.withOpacity(0.4),
+        color: colors.surfaceContainerHighest.withOpacity(0.4),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
